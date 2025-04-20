@@ -1,0 +1,29 @@
+[package]
+name = "poly-once"
+version = "1.0.0"
+authors = ["Can Bölük <me@can.ac>"]
+edition = "2021"
+description = "A thread-safe cell providing async and sync initialization primitives similar to OnceLock"
+license = "MIT"
+repository = "https://github.com/can1357/poly-once"
+documentation = "https://docs.rs/poly-once"
+readme = "README.md"
+keywords = ["async", "once", "cell", "initialization", "concurrency"]
+categories = ["asynchronous", "concurrency", "rust-patterns", "no-std"]
+
+[dependencies]
+parking_lot_core = "0.9"
+tokio = { version = "1", features = ["macros", "test-util"], optional = true }
+
+[dev-dependencies]
+tokio = { version = "1", features = [
+   "rt",
+   "rt-multi-thread",
+   "macros",
+   "test-util",
+] }
+
+[features]
+default = ["async-tokio-mt"]
+async-tokio = ["dep:tokio", "tokio?/rt"]
+async-tokio-mt = ["dep:tokio", "tokio?/rt", "tokio?/rt-multi-thread"]
