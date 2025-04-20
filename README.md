@@ -1,8 +1,8 @@
 # poly-once
 
-[![Crates.io](https://img.shields.io/crates/v/poly-once.svg)](https://crates.io/crates/poly-once)
-[![Docs.rs](https://docs.rs/poly-once/badge.svg)](https://docs.rs/poly-once)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Crates.io](https://img.shields.io/crates/v/poly-once.svg?)](https://crates.io/crates/poly-once)
+[![Docs.rs](https://docs.rs/poly-once/badge.svg?)](https://docs.rs/poly-once)
+[![License: MIT](https://img.shields.io/badge/License-MIT-red.svg)](https://opensource.org/licenses/MIT)
 
 A thread-safe cell providing an initialization primitive similar to `std::sync::OnceLock` but with a lock model that works with both sync and async code.
 
