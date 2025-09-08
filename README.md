@@ -4,9 +4,13 @@
 [![Docs.rs](https://docs.rs/poly-once/badge.svg?)](https://docs.rs/poly-once)
 [![License: MIT](https://img.shields.io/badge/License-MIT-red.svg)](https://opensource.org/licenses/MIT)
 
-A thread-safe cell providing an initialization primitive similar to `std::sync::OnceLock` but with a lock model that works with both sync and async code.
+A thread-safe cell providing initialization primitives similar to `std::sync::OnceLock` but with a lock model that works with both sync and async code.
 
-`poly-once` provides an `Once<T>` type for safe, one-time initialization of values, ensuring that initialization logic runs only once, even under concurrent access from multiple threads or async tasks. It leverages `parking_lot_core` for efficient blocking synchronization.
+`poly-once` provides two types for safe, one-time initialization of values:
+- `Once<T>`: Basic one-time initialization cell
+- `TOnce<P, T>`: Parameterized initialization cell that transforms a parameter `P` into value `T`
+
+Both types ensure that initialization logic runs only once, even under concurrent access from multiple threads or async tasks. They leverage `parking_lot_core` for efficient blocking synchronization.
 
 ## Features
 
@@ -143,6 +147,80 @@ fn main() {
     match try_get_data(true) {
         Ok(data) => println!("Got data again: {}", data),
         Err(_) => panic!("Should have returned existing data"),
+    }
+}
+```
+
+### Parameterized Initialization with TOnce
+
+`TOnce<P, T>` allows you to store a parameter value that will be transformed into the final value on first access.
+
+```rust
+use poly_once::TOnce;
+
+// Store configuration that will be used to create a connection
+static CONNECTION: TOnce<String, Connection> = TOnce::new("localhost:8080".to_string());
+
+struct Connection {
+    addr: String,
+}
+
+impl Connection {
+    fn new(addr: String) -> Self {
+        println!("Establishing connection to {}", addr);
+        Connection { addr }
+    }
+}
+
+fn get_connection() -> &'static Connection {
+    CONNECTION.get_or_init(|addr| Connection::new(addr))
+}
+
+fn main() {
+    // First access creates the connection
+    let conn1 = get_connection();
+    println!("Using connection: {}", conn1.addr);
+    
+    // Subsequent accesses return the same connection
+    let conn2 = get_connection();
+    assert!(std::ptr::eq(conn1, conn2));
+}
+```
+
+### Async Initialization with TOnce
+
+```rust
+use poly_once::TOnce;
+use tokio::time::{sleep, Duration};
+
+static ASYNC_CONFIG: TOnce<String, Config> = TOnce::new("config.json".to_string());
+
+struct Config {
+    data: String,
+}
+
+async fn load_config(path: &str) -> Config {
+    println!("Loading config from {}", path);
+    sleep(Duration::from_millis(100)).await;
+    Config { data: format!("Config from {}", path) }
+}
+
+async fn get_config() -> &'static Config {
+    ASYNC_CONFIG.get_or_init_async(|path| load_config(path)).await
+}
+
+#[tokio::main]
+async fn main() {
+    // Multiple concurrent tasks will only load the config once
+    let tasks: Vec<_> = (0..3).map(|i| {
+        tokio::spawn(async move {
+            let config = get_config().await;
+            println!("Task {} got config: {}", i, config.data);
+        })
+    }).collect();
+    
+    for task in tasks {
+        task.await.unwrap();
     }
 }
 ```
